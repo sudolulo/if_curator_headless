@@ -11,6 +11,7 @@ Headless fork of [if-curator](https://github.com/ds-sebastian/if_curator) with a
 - **Frigate upload** — sends curated face crops directly to Frigate's face training API after processing
 - **People filtering** — skip specific people, whitelist only certain people, or set a minimum photo count
 - **Docker** — pre-built image with NVIDIA GPU support, ready for TrueNAS
+- **Scheduling** - Use cron notation to schedule runs
 
 All of if-curator's original functionality is unchanged.
 
