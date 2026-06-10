@@ -24,23 +24,23 @@ INSIGHTFACE_DIR = os.environ.get("INSIGHTFACE_HOME", "/models/insightface")
 RUN_ENV = {**os.environ, "PYTHONUNBUFFERED": "1"}
 
 
-def check_models():
-    """Log model download status before each run."""
-    print("📦 Checking models...", flush=True)
+check_models() {
+    echo "📦 Checking models..."
 
-    buffalo = Path(INSIGHTFACE_DIR) / "models" / "buffalo_l"
-    if buffalo.exists():
-        print("  ✅ InsightFace Buffalo_L: downloaded", flush=True)
-    else:
-        print("  ⬇️  InsightFace Buffalo_L: downloading (~300MB)...", flush=True)
+    if [ -d "/models/insightface/models/buffalo_l" ]; then
+        echo "  ✅ InsightFace Buffalo_L: present"
+    else
+        echo "  ⬇️  InsightFace Buffalo_L: not found — will download on first run (~300MB)"
+    fi
 
-    hf_hub = Path(MODELS_DIR) / "hub"
-    if hf_hub.exists() and any(hf_hub.iterdir()):
-        print("  ✅ HuggingFace models: downloaded", flush=True)
-    else:
-        print("  ⬇️  HuggingFace models: downloading (SigLIP ~1GB, YOLOv9c ~500MB)...", flush=True)
+    if [ -d "/models/huggingface/hub" ] && [ "$(find /models/huggingface/hub -maxdepth 1 -type d 2>/dev/null | wc -l)" -gt 1 ]; then
+        echo "  ✅ HuggingFace models: present"
+    else
+        echo "  ⬇️  HuggingFace models: not found — will download on first run (SigLIP ~1GB, YOLOv9c ~500MB)"
+    fi
 
-    print("🚀 Starting if-curator...", flush=True)
+    echo "🚀 Starting if-curator..."
+}
 
 
 def calc_time_display(seconds):
