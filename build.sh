@@ -2,35 +2,19 @@
 set -e
 
 # --- Configuration ---
-IMAGE_NAME="ghcr.io/sudolulo/if-curator-headless"
-TAG="latest"
 COMMIT_MSG="automated update: $(date '+%Y-%m-%d %H:%M:%S')"
 
-# --- 1. Git Commit & Push ---
-echo "💾 Committing changes to Git..."
+# --- Git Sync ---
+echo "💾 Committing and pushing changes to GitHub..."
+
 git add .
+
+# Only proceed if there are actual changes to commit
 if ! git diff-index --quiet HEAD --; then
     git commit -m "$COMMIT_MSG"
     git push
-    echo "✅ Changes pushed to GitHub."
+    echo "✅ Changes pushed. GitHub Actions will now build and deploy the image."
 else
-    echo "ℹ️  No changes to commit."
+    echo "ℹ️  No changes detected; nothing to push."
 fi
-
-# --- 2. Build Docker ---
-echo "🔧 Building image (no cache)..."
-docker build --no-cache -t ${IMAGE_NAME}:${TAG} .
-
-# --- 3. Push to GHCR ---
-echo "📤 Pushing to GHCR..."
-docker push ${IMAGE_NAME}:${TAG}
-
-# --- 4. Success UI ---
-echo ""
-echo "  ╔══════════════════════════════════════════════════╗"
-echo "  ║                                                  ║"
-echo "  ║     ✅  GIT & DOCKER DEPLOY COMPLETE             ║"
-echo "  ║                                                  ║"
-echo "  ╚══════════════════════════════════════════════════╝"
-echo ""
 
