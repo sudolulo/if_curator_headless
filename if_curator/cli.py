@@ -210,41 +210,131 @@ def _resolve_strategy(strategy: str, has_embedding: bool) -> tuple[int | str, st
 
 
 def upload_to_frigate(jobs: list[dict]) -> None:
-    """Upload processed face crops to Frigate via API."""
+    """Upload processed face crops to Frigate via API with detailed logging."""
     frigate_url = os.environ.get("FRIGATE_URL", "")
     if not frigate_url:
-        rprint("[yellow]FRIGATE_URL not set, skipping upload.[/yellow]")
+        rprint("[yellow]⚠️  FRIGATE_URL not set, skipping upload.[/yellow]")
         return
 
-    uploaded, failed = 0, 0
+    rprint("\n[bold cyan]📤 Uploading to Frigate[/bold cyan]")
+    rprint(f"  Target: [dim]{frigate_url}[/dim]")
+
+    # Count total files to upload
+    total_files = 0
     for job in jobs:
         name = job["person"]["name"]
         person_dir = os.path.join(Config.OUTPUT_DIR, name)
         if not os.path.isdir(person_dir):
             continue
+        total_files += sum(
+            1 for f in os.listdir(person_dir)
+            if f.lower().endswith((".jpg", ".jpeg", ".png", ".webp"))
+        )
 
-        for fname in sorted(os.listdir(person_dir)):
-            fpath = os.path.join(person_dir, fname)
-            if not fname.lower().endswith((".jpg", ".jpeg", ".png", ".webp")):
+    if total_files == 0:
+        rprint("  [yellow]No images found to upload.[/yellow]")
+        return
+
+    rprint(f"  People: [bold]{len(jobs)}[/bold], Total images: [bold]{total_files}[/bold]")
+
+    uploaded, failed = 0, 0
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        console=console,
+    ) as progress:
+        upload_task = progress.add_task("[green]Uploading to Frigate", total=total_files)
+
+        for job in jobs:
+            name = job["person"]["name"]
+            person_dir = os.path.join(Config.OUTPUT_DIR, name)
+            if not os.path.isdir(person_dir):
+                progress.console.print(f"  [dim]⏭️  {name}: no output directory, skipping[/dim]")
                 continue
-            try:
-                with open(fpath, "rb") as f:
-                    resp = requests.post(
-                        f"{frigate_url}/api/faces/train/{name}/classify",
-                        files={"file": (fname, f, "image/jpeg")},
-                        timeout=30,
-                    )
-                if resp.status_code == 200:
-                    uploaded += 1
-                else:
+
+            person_files = sorted(
+                f for f in os.listdir(person_dir)
+                if f.lower().endswith((".jpg", ".jpeg", ".png", ".webp"))
+            )
+
+            if not person_files:
+                progress.console.print(f"  [dim]⏭️  {name}: no images found[/dim]")
+                continue
+
+            progress.console.print(f"  📁 {name}: uploading {len(person_files)} image(s)...")
+            person_uploaded = 0
+            person_failed = 0
+
+            for fname in person_files:
+                fpath = os.path.join(person_dir, fname)
+                try:
+                    with open(fpath, "rb") as f:
+                        resp = requests.post(
+                            f"{frigate_url}/api/faces/train/{name}/classify",
+                            files={"file": (fname, f, "image/jpeg")},
+                            timeout=30,
+                        )
+                    if resp.status_code == 200:
+                        uploaded += 1
+                        person_uploaded += 1
+                    else:
+                        failed += 1
+                        person_failed += 1
+                        progress.console.print(
+                            f"    [red]✗ {fname}: HTTP {resp.status_code}[/red]"
+                        )
+                        try:
+                            error_detail = resp.json().get("message", resp.text[:100])
+                            progress.console.print(f"      [dim]{error_detail}[/dim]")
+                        except Exception:
+                            progress.console.print(f"      [dim]{resp.text[:100]}[/dim]")
+                except requests.exceptions.ConnectionError:
                     failed += 1
-                    logger.warning(f"Frigate upload failed for {name}/{fname}: {resp.status_code}")
-            except Exception as e:
-                failed += 1
-                logger.warning(f"Frigate upload error for {name}/{fname}: {e}")
+                    person_failed += 1
+                    progress.console.print(
+                        f"    [red]✗ {fname}: Connection refused[/red]"
+                    )
+                except requests.exceptions.Timeout:
+                    failed += 1
+                    person_failed += 1
+                    progress.console.print(
+                        f"    [red]✗ {fname}: Request timed out (30s)[/red]"
+                    )
+                except Exception as e:
+                    failed += 1
+                    person_failed += 1
+                    progress.console.print(
+                        f"    [red]✗ {fname}: {type(e).__name__} - {e}[/red]"
+                    )
 
-    rprint(f"  [green]Frigate upload: {uploaded} succeeded, {failed} failed[/green]")
+                progress.advance(upload_task)
 
+            # Per-person summary
+            if person_failed == 0:
+                progress.console.print(
+                    f"  ✅ {name}: {person_uploaded}/{person_uploaded} uploaded"
+                )
+            else:
+                progress.console.print(
+                    f"  ⚠️  {name}: {person_uploaded} succeeded, {person_failed} failed"
+                )
+
+    # Grand summary
+    rprint("\n  [bold]Frigate Upload Summary:[/bold]")
+    rprint(f"    ✅ Succeeded: [green]{uploaded}[/green]")
+    if failed:
+        rprint(f"    ❌ Failed:    [red]{failed}[/red]")
+    else:
+        rprint(f"    ❌ Failed:    0")
+
+    if failed > 0:
+        rprint("  [yellow]Check logs above for per-file error details.[/yellow]")
+
+    if failed == total_files and total_files > 0:
+        rprint("  [bold red]All uploads failed. Verify FRIGATE_URL is reachable and API is enabled.[/bold red]")
 
 
 def _perform_selection(assets: list, limit: int | str, name: str, selection_mode: str, entity_type: str) -> list:
@@ -420,3 +510,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

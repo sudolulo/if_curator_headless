@@ -15,12 +15,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
     g++ \
+    tini \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf /usr/bin/python3.12 /usr/bin/python \
     && ln -sf /usr/bin/python3.12 /usr/bin/python3
 
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.local/bin:${PATH}"
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
+    && cp /root/.local/bin/uv /usr/local/bin/uv \
+    && chmod 755 /usr/local/bin/uv
 
 WORKDIR /app
 
@@ -42,5 +44,8 @@ ENV FORCE_CPU=false \
     HF_HOME=/models/huggingface \
     INSIGHTFACE_HOME=/models/insightface
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+HEALTHCHECK --interval=1h --timeout=10s --start-period=60s --retries=3 \
+  CMD test -f /app/entrypoint.sh || exit 1
+
+ENTRYPOINT ["tini", "--", "/app/entrypoint.sh"]
 
