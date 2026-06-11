@@ -18,7 +18,7 @@ All of if-curator's original functionality is unchanged.
 
 ---
 
-## Why This Tool?
+## Why This Tool??
 
 > **"Diversity matters far more than volume."** — *Frigate Developer Tips*
 
