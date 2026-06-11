@@ -71,7 +71,6 @@ transformers = "transformers"
 ultralytics = "ultralytics"
 
 [tool.deptry.per_rule_ignores]
-# onnxruntime-gpu is an optional dep that replaces onnxruntime at runtime
 DEP002 = ["onnxruntime-gpu"]
 
 [build-system]
