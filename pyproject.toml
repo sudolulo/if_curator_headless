@@ -68,5 +68,27 @@ target-version = "py312"
 [tool.ruff.lint]
 select = ["E", "F", "I"]
 
-[
+[tool.deptry]
+pep621_dev_dependency_groups = ["dev"]
+
+[tool.deptry.package_module_name_map]
+pillow = "PIL"
+opencv-python-headless = "cv2"
+python-dotenv = "dotenv"
+insightface = "insightface"
+numpy = "numpy"
+nvidia-cudnn-cu12 = "nvidia.cudnn"
+onnxruntime-gpu = "onnxruntime"
+requests = "requests"
+rich = "rich"
+torch = "torch"
+transformers = "transformers"
+ultralytics = "ultralytics"
+
+[tool.deptry.per_rule_ignores]
+DEP002 = ["onnxruntime-gpu", "nvidia-cudnn-cu12"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
