@@ -2,7 +2,7 @@ name: Publish Docker Image
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "dev"]
     paths-ignore:
       - "**.md"
       - "docs/**"
@@ -121,14 +121,23 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Determine image tags
+        id: tags
+        run: |
+          if [ "${{ github.ref_name }}" = "dev" ]; then
+            echo "tags=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev" >> "$GITHUB_OUTPUT"
+          else
+            echo "tags=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Create and push multi-arch manifest
         working-directory: /tmp/digests
         run: |
           docker buildx imagetools create \
-            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            -t ${{ steps.tags.outputs.tags }} \
             $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
 
       - name: Inspect image
         run: |
-          docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          docker buildx imagetools inspect ${{ steps.tags.outputs.tags }}
 
