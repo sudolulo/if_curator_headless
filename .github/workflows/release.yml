@@ -1,18 +1,5 @@
 name: Create GitHub Release
 
-steps:
-  - name: Free up disk space
-    run: |
-      sudo rm -rf /usr/share/dotnet
-      sudo rm -rf /opt/ghc
-      sudo rm -rf "/usr/local/share/boost"
-      sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-      echo "Disk space freed."
-
-  - name: Checkout
-    uses: actions/checkout@v4
-    # ... rest of your steps
-
 on:
   push:
     tags: [ 'v*' ]
@@ -31,6 +18,13 @@ jobs:
       packages: write # Needed for pushing to GHCR
 
     steps:
+      - name: Free up disk space
+        run: |
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /opt/ghc
+        sudo rm -rf "/usr/local/share/boost"
+        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+        echo "Disk space freed."
       - name: Checkout
         uses: actions/checkout@v4
         with:
