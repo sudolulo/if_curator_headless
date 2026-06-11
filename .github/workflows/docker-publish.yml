@@ -7,9 +7,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    # --- ADD THIS BLOCK ---
     permissions:
       contents: read
       packages: write
+    # ----------------------
 
     steps:
       - name: Checkout repository
@@ -27,5 +30,6 @@ jobs:
         with:
           context: .
           push: true
+          # Make sure this matches your exact repo name (lowercase)
           tags: ghcr.io/sudolulo/if-curator-headless:latest
 
