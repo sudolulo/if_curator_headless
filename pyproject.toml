@@ -36,10 +36,31 @@ gpu = [
     "onnxruntime-gpu>=1.23.2",
 ]
 object = [
-    "torch>=2.9.1",
+    "torch>=2.6.0",
     "transformers>=4.57.6",
     "ultralytics>=8.3.252",
 ]
+
+# ── Per-platform PyTorch index configuration ──
+#   linux/amd64  → CUDA 12.6 wheels (latest PyTorch)
+#   linux/arm64  → CPU-only wheels
+#   other        → CPU-only wheels
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cu126", marker = "sys_platform == 'linux' and platform_machine == 'x86_64'" },
+    { index = "pytorch-cpu", marker = "sys_platform == 'linux' and platform_machine == 'aarch64'" },
+    { index = "pytorch-cpu", marker = "sys_platform != 'linux'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [dependency-groups]
 dev = [
@@ -71,6 +92,7 @@ transformers = "transformers"
 ultralytics = "ultralytics"
 
 [tool.deptry.per_rule_ignores]
+# onnxruntime-gpu is an optional dep that replaces onnxruntime at runtime
 DEP002 = ["onnxruntime-gpu"]
 
 [build-system]

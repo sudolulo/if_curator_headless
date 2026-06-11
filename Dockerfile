@@ -1,63 +1,59 @@
-# =============================================================================
-# Stage 1: Base — platform-specific base image
-# =============================================================================
-# amd64:  NVIDIA CUDA runtime (for GPU acceleration)
-# arm64:  Plain Ubuntu (no CUDA on ARM; CPU or media-kit only)
+# ── Platform-conditional base image ──────────────────────────────────────
+#   amd64:  NVIDIA CUDA 12.6 runtime (matches cu126 torch wheels)
+#   arm64:  Plain Ubuntu (CPU-only; no CUDA on ARM64)
 
-FROM --platform=$BUILDPLATFORM nvidia/cuda:12.4.1-runtime-ubuntu22.04 AS base-amd64
+FROM --platform=$BUILDPLATFORM nvidia/cuda:12.6.3-runtime-ubuntu22.04 AS base-amd64
 FROM --platform=$BUILDPLATFORM ubuntu:22.04 AS base-arm64
 
-# =============================================================================
-# Stage 2: Build — install system packages + Python + uv
-# =============================================================================
+# ── Build stage ───────────────────────────────────────────────────────────
 ARG TARGETARCH
 
 FROM base-${TARGETARCH} AS build
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Certificates + curl
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
     gnupg \
     && rm -rf /var/lib/apt/lists/*
 
+# Python 3.12 + system libs
 RUN apt-get update && apt-get install -y --no-install-recommends \
     software-properties-common \
     && add-apt-repository ppa:deadsnakes/ppa -y \
     && apt-get update && apt-get install -y --no-install-recommends \
     python3.12 python3.12-venv python3.12-dev \
-    libgl1 libglib2.0-0 libxext6 git g++ tini \
+    libgl1 libglib2.0-0 libxext6 g++ tini \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf /usr/bin/python3.12 /usr/bin/python3
 
+# Install uv
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
     && cp /root/.local/bin/uv /usr/local/bin/uv
 
 WORKDIR /app
 
-# Copy project files first (for layer caching)
-COPY pyproject.toml uv.lock* ./
+# Copy project files for deterministic, cached builds
+COPY pyproject.toml uv.lock ./
 COPY if_curator/ if_curator/
 COPY entrypoint.sh scheduler.py ./
 
-# Platform-conditional Python deps:
-#   amd64:  install GPU extras (onnxruntime-gpu + CUDA torch)
-#   arm64:  install CPU-only (onnxruntime + torch-cpu)
-RUN if [ "$(uname -m)" = "x86_64" ]; then \
-      uv sync --extra gpu --extra object && uv add croniter; \
+# Install dependencies — uv resolves per-platform via tool.uv.sources markers
+#   amd64:  --extra gpu --extra object  → CUDA torch + onnxruntime-gpu
+#   arm64:  --extra object              → CPU torch + onnxruntime
+RUN if [ "$TARGETARCH" = "amd64" ]; then \
+      uv sync --extra gpu --extra object; \
     else \
-      uv sync --extra object --no-binary torch && \
-      UV_TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu uv pip install torch && \
-      uv add croniter; \
+      uv sync --extra object; \
     fi \
+    && uv add croniter \
     && uv cache clean
 
 RUN chmod +x /app/entrypoint.sh
 
-# =============================================================================
-# Stage 3: Runtime — minimal image with appuser
-# =============================================================================
+# ── Runtime stage ─────────────────────────────────────────────────────────
 FROM build AS runtime
 
 RUN groupadd -g 568 apps && useradd -u 568 -g apps -m -s /bin/bash appuser \
