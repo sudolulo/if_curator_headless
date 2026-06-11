@@ -1,5 +1,3 @@
-[![Create GitHub Release & Build Image](https://p.kagi.com/proxy/badge.svg?c=fl_cFVTz4MewWVRdySyo2uuJMuPtmNAeTc6SMKZrAFRRxBK1k1YFU43C--qNL6zD6-H0ud1-E6nFMiF-5WNfYMf2Y20cJJlT8-IfAeY3-OAdM2XE3R-AlKNRzlHZfblXT5hmnNZL3yZNaC4SW9WpVg%3D%3D)](https://github.com/sudolulo/if-curator-headless/actions/workflows/release.yml)
-
 
 ### if-curator-headless
 
