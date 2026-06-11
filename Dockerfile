@@ -20,14 +20,15 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
 
 WORKDIR /app
 
-# Clone your specific repo
+# Clone your repo (ensure this repo has the updated cli.py locally!)
 RUN git clone --depth 1 https://github.com/sudolulo/if_curator_headless.git . \
     && uv sync --extra gpu \
     && uv add croniter \
     && uv cache clean
 
-# Permissions for entrypoint
-RUN chmod +x entrypoint.sh
+# Copy helper scripts
+COPY entrypoint.sh scheduler.py /app/
+RUN chmod +x /app/entrypoint.sh
 
 # Setup non-root user and persistent model paths
 RUN groupadd -g 568 apps \

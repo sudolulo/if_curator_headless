@@ -1,23 +1,22 @@
-name: Release
+name: Create GitHub Release
 
 on:
   push:
-    tags:
-      - "v*"
+    tags: [ 'v*' ]
   workflow_dispatch:
     inputs:
       version:
-        description: "Version to release (e.g. 0.1.0)"
+        description: 'Version to release (e.g., 1.0.0)'
         required: true
-        default: "0.1.0"
-
-permissions:
-  contents: write
 
 jobs:
   release:
-    name: Create GitHub Release
+    name: Create GitHub Release & Build Image
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed for creating releases
+      packages: write # Needed for pushing to GHCR
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -80,3 +79,20 @@ jobs:
               draft: false,
               prerelease: false,
             });
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/sudolulo/if-curator-headless:latest
+            ghcr.io/sudolulo/if-curator-headless:${{ steps.tag.outputs.TAG }}
+
