@@ -90,9 +90,11 @@ def execute_jobs(jobs: list[dict]) -> None:
 
             job_task = progress.add_task(f"Processing {name}...", total=len(assets))
             person_dir = os.path.join(Config.OUTPUT_DIR, name)
-            if os.path.isdir(person_dir):
+            # Face crops are transient (uploaded then discarded); wipe before each run.
+            # Object crops are the deliverable; preserve them across runs.
+            if mode == "face" and os.path.isdir(person_dir):
                 shutil.rmtree(person_dir)
-            os.makedirs(person_dir)
+            os.makedirs(person_dir, exist_ok=True)
 
             # Track filename → asset_id mapping for upload dedup
             asset_map: dict[str, str] = {}
@@ -160,9 +162,25 @@ def execute_jobs(jobs: list[dict]) -> None:
 def upload_to_frigate(jobs: list[dict]) -> None:
     """Upload processed face crops to Frigate via API with detailed logging.
 
+    Only runs for face-mode jobs. Object-mode crops are saved to the output
+    directory as the deliverable and must be copied to Frigate manually.
+
     After each successful upload, records the Immich asset ID in the
     upload tracker so it is skipped on future runs.
     """
+    face_jobs = [j for j in jobs if j["config"].get("mode", "face") == "face"]
+
+    if not face_jobs:
+        rprint("[dim]No face-mode jobs to upload.[/dim]")
+        return
+
+    # Notify user about object-mode jobs that were skipped
+    object_jobs = [j for j in jobs if j["config"].get("mode") == "object"]
+    for job in object_jobs:
+        name = job["person"]["name"]
+        person_dir = os.path.join(Config.OUTPUT_DIR, name)
+        rprint(f"  [dim]📁 {name} (object): crops saved to {person_dir} — copy to Frigate manually[/dim]")
+
     frigate_url = os.environ.get("FRIGATE_URL", "")
     if not frigate_url:
         rprint("[yellow]⚠️  FRIGATE_URL not set, skipping upload.[/yellow]")
@@ -175,7 +193,7 @@ def upload_to_frigate(jobs: list[dict]) -> None:
     # from the asset_map stored on each job during execute_jobs()
     filename_to_asset_id: dict[str, dict[str, str]] = {}
     total_files = 0
-    for job in jobs:
+    for job in face_jobs:
         name = job["person"]["name"]
         asset_map = job.get("asset_map", {})
         filename_to_asset_id[name] = asset_map
@@ -185,7 +203,7 @@ def upload_to_frigate(jobs: list[dict]) -> None:
         rprint("  [yellow]No images found to upload.[/yellow]")
         return
 
-    rprint(f"  People: [bold]{len(jobs)}[/bold], Total images: [bold]{total_files}[/bold]")
+    rprint(f"  People: [bold]{len(face_jobs)}[/bold], Total images: [bold]{total_files}[/bold]")
 
     uploaded, failed = 0, 0
     max_retries = 2
@@ -199,7 +217,7 @@ def upload_to_frigate(jobs: list[dict]) -> None:
     ) as progress:
         upload_task = progress.add_task("[green]Uploading to Frigate", total=total_files)
 
-        for job in jobs:
+        for job in face_jobs:
             name = job["person"]["name"]
             # URL-encode the name for the API (handles spaces, special chars)
             encoded_name = quote(name, safe="")
