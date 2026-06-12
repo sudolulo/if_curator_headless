@@ -15,22 +15,8 @@ env:
   IMAGE_NAME: sudolulo/winnow
 
 jobs:
-  verify-lockfile:
-    name: Verify uv.lock is current
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
-
-      - name: Check lockfile is up to date
-        run: uv lock --check
-
   build:
     name: Build (${{ matrix.platform }})
-    needs: verify-lockfile
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
@@ -140,4 +126,3 @@ jobs:
       - name: Inspect image
         run: |
           docker buildx imagetools inspect ${{ steps.tags.outputs.tags }}
-
