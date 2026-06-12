@@ -1,8 +1,5 @@
 """Tests for upload tracker — mark, filter, reset, and summary logic."""
 
-import json
-import os
-import tempfile
 
 import pytest
 

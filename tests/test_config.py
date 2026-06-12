@@ -1,8 +1,6 @@
 """Smoke tests for configuration loading."""
 
-import os
 
-import pytest
 
 
 def test_config_loads_defaults(monkeypatch):

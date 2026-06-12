@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-import os
-import sys
-import subprocess
-import time
 import logging
+import os
+import subprocess
+import sys
+import time
 from pathlib import Path
 
 try:
