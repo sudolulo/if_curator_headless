@@ -1,7 +1,7 @@
 services:
-  if-curator:
-    image: ghcr.io/sudolulo/if-curator-headless:latest
-    container_name: if-curator
+  winnow:
+    image: ghcr.io/sudolulo/winnow:latest
+    container_name: winnow
     environment:
       # ── Required ──────────────────────────────────────────────────────────
       - IMMICH_URL=${IMMICH_URL}
@@ -52,10 +52,10 @@ services:
       # - CRON_SCHEDULE=0 3 1 * *
       # - CRON_SCHEDULE=*/30 * * * *
     volumes:
-      # Replace <pool> with your TrueNAS pool name, e.g. /mnt/tank/if-curator/...
-      - /mnt/<pool>/if-curator/models:/models
-      - /mnt/<pool>/if-curator/embeddings:/app/.if_cache
-      - /mnt/<pool>/if-curator/output:/app/frigate_train
+      # Replace <pool> with your TrueNAS pool name, e.g. /mnt/tank/winnow/...
+      - /mnt/<pool>/winnow/models:/models
+      - /mnt/<pool>/winnow/embeddings:/app/.if_cache
+      - /mnt/<pool>/winnow/output:/app/frigate_train
     stdin_open: true
     tty: true
     restart: unless-stopped

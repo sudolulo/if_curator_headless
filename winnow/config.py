@@ -1,4 +1,4 @@
-"""Configuration management for if-curator."""
+"""Configuration management for winnow."""
 
 import json
 import logging

@@ -1,4 +1,4 @@
-from if_curator.cli import main
+from winnow.cli import main
 
 if __name__ == "__main__":
     main()

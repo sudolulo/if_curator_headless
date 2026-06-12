@@ -4,7 +4,7 @@ export PYTHONUNBUFFERED=1
 
 # 1. Run the job immediately on startup
 echo "▶ Running on startup..."
-uv run python -m if_curator.cli
+uv run python -m winnow.cli
 
 # 2. If a schedule exists, start the scheduler
 if [ -n "${CRON_SCHEDULE:-}" ]; then

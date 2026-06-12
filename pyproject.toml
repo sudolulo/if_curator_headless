@@ -1,5 +1,5 @@
 [project]
-name = "if-curator"
+name = "winnow"
 version = "0.1.0"
 description = "Immich to Frigate training sets"
 license = "MIT"
@@ -30,10 +30,10 @@ dependencies = [
 ]
 
 [project.scripts]
-if-curator = "if_curator.cli:main"
+winnow = "winnow.cli:main"
 
 [project.urls]
-Repository = "https://github.com/sudolulo/if_curator_headless"
+Repository = "https://github.com/sudolulo/winnow"
 
 [tool.uv]
 override-dependencies = ["onnxruntime-gpu>=1.23.2"]
@@ -62,7 +62,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["if_curator"]
+packages = ["winnow"]
 
 [tool.ruff]
 line-length = 120

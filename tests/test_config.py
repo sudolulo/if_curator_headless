@@ -10,7 +10,7 @@ def test_config_loads_defaults(monkeypatch):
     monkeypatch.setenv("IMMICH_URL", "http://test:2283")
     monkeypatch.setenv("API_KEY", "test-key")
 
-    from if_curator.config import _Config
+    from winnow.config import _Config
 
     _Config.reset()
     cfg = _Config()
@@ -46,7 +46,7 @@ def test_config_env_overrides(monkeypatch):
     monkeypatch.setenv("ENABLE_FACE_ALIGNMENT", "false")
     monkeypatch.setenv("ENABLE_CACHE", "true")
 
-    from if_curator.config import _Config
+    from winnow.config import _Config
 
     _Config.reset()
     cfg = _Config()
@@ -69,7 +69,7 @@ def test_get_headers_returns_api_key(monkeypatch):
     monkeypatch.setenv("IMMICH_URL", "http://test:2283")
     monkeypatch.setenv("API_KEY", "my-secret-key")
 
-    from if_curator.config import _Config, get_headers
+    from winnow.config import _Config, get_headers
 
     _Config.reset()
     headers = get_headers()

@@ -1,8 +1,8 @@
-[![Publish Docker Image](https://github.com/sudolulo/if_curator_headless/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/sudolulo/if_curator_headless/actions/workflows/docker-publish.yml) [![Release](https://github.com/sudolulo/if_curator_headless/actions/workflows/release.yml/badge.svg)](https://github.com/sudolulo/if_curator_headless/actions/workflows/release.yml) [![Lint](https://github.com/sudolulo/if_curator_headless/actions/workflows/lint.yml/badge.svg)](https://github.com/sudolulo/if_curator_headless/actions/workflows/lint.yml) [![Test](https://github.com/sudolulo/if_curator_headless/actions/workflows/test.yml/badge.svg)](https://github.com/sudolulo/if_curator_headless/actions/workflows/test.yml)
+[![Publish Docker Image](https://github.com/sudolulo/winnow/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/sudolulo/winnow/actions/workflows/docker-publish.yml) [![Release](https://github.com/sudolulo/winnow/actions/workflows/release.yml/badge.svg)](https://github.com/sudolulo/winnow/actions/workflows/release.yml) [![Lint](https://github.com/sudolulo/winnow/actions/workflows/lint.yml/badge.svg)](https://github.com/sudolulo/winnow/actions/workflows/lint.yml) [![Test](https://github.com/sudolulo/winnow/actions/workflows/test.yml/badge.svg)](https://github.com/sudolulo/winnow/actions/workflows/test.yml)
 
-# if-curator-headless
+# winnow
 
-`if-curator-headless` pulls photos of people and objects from your [Immich](https://immich.app) library, selects the most diverse and highest-quality subset using AI embeddings, and delivers them as training data for [Frigate](https://frigate.video)'s face recognition and object classification models.
+`winnow` pulls photos of people and objects from your [Immich](https://immich.app) library, selects the most diverse and highest-quality subset using AI embeddings, and delivers them as training data for [Frigate](https://frigate.video)'s face recognition and object classification models.
 
 It runs fully headless in Docker, is configured entirely through environment variables, and can run on a schedule — no interactive prompts, no manual steps.
 
@@ -14,7 +14,7 @@ Frigate's face recognition model (ArcFace) and object classifier are only as goo
 
 If you upload 100 photos from the same week, the model learns the lighting in your living room and the jacket you wore that month. It struggles the moment anything changes. What you actually want is a spread: different years, different lighting conditions, different angles, different contexts.
 
-Finding that spread manually across a library of thousands of photos is not practical. `if-curator-headless` does it automatically.
+Finding that spread manually across a library of thousands of photos is not practical. `winnow` does it automatically.
 
 ---
 
@@ -103,8 +103,8 @@ If the embedding model is unavailable, the tool falls back to **time spread**: e
 
 ```yaml
 services:
-  if-curator:
-    image: ghcr.io/sudolulo/if-curator-headless:latest
+  winnow:
+    image: ghcr.io/sudolulo/winnow:latest
     environment:
       - IMMICH_URL=http://192.168.1.10:2283
       - API_KEY=your-immich-api-key
@@ -204,10 +204,10 @@ The first run after a fresh install downloads the embedding models (~1-2 GB). Su
 ## Local Install
 
 ```bash
-git clone https://github.com/sudolulo/if_curator_headless.git
-cd if_curator_headless
+git clone https://github.com/sudolulo/winnow.git
+cd winnow
 uv sync
-uv run if-curator
+uv run winnow
 ```
 
 Requires Python 3.12+ and [uv](https://astral.sh/uv/). An NVIDIA GPU is strongly recommended — CPU mode works but embedding computation is significantly slower.
@@ -225,4 +225,4 @@ Requires Python 3.12+ and [uv](https://astral.sh/uv/). An NVIDIA GPU is strongly
 
 ## Attribution
 
-Based on [if-curator](https://github.com/ds-sebastian/if_curator) by Sebastian, licensed MIT.
+Based on [winnow](https://github.com/ds-sebastian/if_curator) by Sebastian, licensed MIT.

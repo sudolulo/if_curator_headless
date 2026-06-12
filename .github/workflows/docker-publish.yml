@@ -12,7 +12,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: sudolulo/if-curator-headless
+  IMAGE_NAME: sudolulo/winnow
 
 jobs:
   verify-lockfile:

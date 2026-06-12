@@ -33,7 +33,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev \
     && uv cache clean
 
-COPY if_curator/ if_curator/
+COPY winnow/ winnow/
 COPY entrypoint.sh scheduler.py ./
 RUN chmod +x /app/entrypoint.sh
 

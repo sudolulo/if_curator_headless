@@ -1,0 +1,8 @@
+services:
+  if-curator:
+    build: .
+    network_mode: host
+    volumes:
+      - /code/if-curator/models:/models
+      - /code/if-curator/embeddings:/app/.if_cache
+      - /code/if-curator/output:/app/output

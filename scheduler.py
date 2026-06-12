@@ -35,7 +35,7 @@ def check_models():
         print("  ✅ HuggingFace models: present", flush=True)
     else:
         print("  ⬇️  HuggingFace models: not found — will download", flush=True)
-    print("🚀 Starting if-curator...", flush=True)
+    print("🚀 Starting winnow...", flush=True)
 
 
 NOW = time.time()
@@ -45,14 +45,14 @@ next_run = cron.get_next(float)
 while True:
     now = time.time()
     if now >= next_run:
-        print(f"\n▶ [{time.strftime('%Y-%m-%d %H:%M:%S')}] Starting if-curator...", flush=True)
+        print(f"\n▶ [{time.strftime('%Y-%m-%d %H:%M:%S')}] Starting winnow...", flush=True)
         check_models()
-        result = subprocess.run(["uv", "run", "if-curator"], env=RUN_ENV)
+        result = subprocess.run(["uv", "run", "winnow"], env=RUN_ENV)
         if result.returncode != 0:
-            logger.error(f"if-curator exited with code {result.returncode}")
-            print(f"❌ if-curator failed with exit code {result.returncode}", flush=True)
+            logger.error(f"winnow exited with code {result.returncode}")
+            print(f"❌ winnow failed with exit code {result.returncode}", flush=True)
         else:
-            print("✅ if-curator completed successfully", flush=True)
+            print("✅ winnow completed successfully", flush=True)
         next_run = cron.get_next(float)
     time.sleep(60)
 

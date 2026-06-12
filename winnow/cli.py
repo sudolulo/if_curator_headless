@@ -1,4 +1,4 @@
-"""Interactive CLI for if-curator."""
+"""Interactive CLI for winnow."""
 
 import logging
 import os
@@ -17,12 +17,12 @@ logger = logging.getLogger(__name__)
 
 
 def main() -> None:
-    """Entry point for if-curator CLI."""
+    """Entry point for winnow CLI."""
     try:
         setup_logging(verbose=False)
 
         console.print(r"""
-    [bold blue]if-curator[/bold blue]
+    [bold blue]winnow[/bold blue]
     [dim]Immich -> Frigate Training Data Curator[/dim]
         """)
 

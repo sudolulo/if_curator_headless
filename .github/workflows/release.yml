@@ -136,6 +136,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ghcr.io/sudolulo/if-curator-headless:latest
-            ghcr.io/sudolulo/if-curator-headless:${{ steps.tag.outputs.TAG }}
+            ghcr.io/sudolulo/winnow:latest
+            ghcr.io/sudolulo/winnow:${{ steps.tag.outputs.TAG }}
 

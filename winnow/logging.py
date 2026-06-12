@@ -1,4 +1,4 @@
-"""Logging configuration for if-curator."""
+"""Logging configuration for winnow."""
 
 import logging
 import os
