@@ -1,6 +1,6 @@
 # ── Platform-conditional base ─────────────────────────────────────────────
 #   amd64:  NVIDIA CUDA 12.6 (GPU acceleration when available, CPU fallback)
-#   arm64:  Ubuntu 26.04 (CPU-only; Python 3.12 native — no PPA needed)
+#   arm64:  Ubuntu 26.04 (CPU-only; no CUDA on ARM)
 
 FROM --platform=$BUILDPLATFORM nvidia/cuda:12.9.2-cudnn-runtime-ubuntu22.04 AS base-amd64
 FROM --platform=$BUILDPLATFORM ubuntu:26.04 AS base-arm64
@@ -12,8 +12,8 @@ FROM base-${TARGETARCH} AS build
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# amd64 (Ubuntu 22.04 CUDA base): Python 3.12 via deadsnakes PPA
-# arm64 (Ubuntu 24.04): Python 3.12 is native — skip PPA entirely
+# amd64 (Ubuntu 22.04 CUDA base): Python 3.13 via deadsnakes PPA
+# arm64 (Ubuntu 26.04): Python 3.13 available natively in repos
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
@@ -23,10 +23,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         && apt-get update; \
     fi \
     && apt-get install -y --no-install-recommends \
-    python3.12 python3.12-venv python3.12-dev \
+    python3.13 python3.13-venv python3.13-dev \
     libgl1 libglib2.0-0 libxext6 g++ \
     && rm -rf /var/lib/apt/lists/* \
-    && ln -sf /usr/bin/python3.12 /usr/bin/python3
+    && ln -sf /usr/bin/python3.13 /usr/bin/python3
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
     && cp /root/.local/bin/uv /usr/local/bin/uv
@@ -43,7 +43,7 @@ RUN chmod +x /app/entrypoint.sh
 
 # ── Runtime stage ─────────────────────────────────────────────────────────
 #   Starts fresh from the base image — excludes build tools (g++,
-#   python3.12-dev, curl, gnupg) that are not needed at runtime.
+#   python3.13-dev, curl, gnupg) that are not needed at runtime.
 
 FROM base-${TARGETARCH} AS runtime
 
@@ -58,18 +58,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         && apt-get update; \
     fi \
     && apt-get install -y --no-install-recommends \
-    python3.12 python3.12-venv \
+    python3.13 python3.13-venv \
     libgl1 libglib2.0-0 libxext6 \
     && rm -rf /var/lib/apt/lists/* \
-    && ln -sf /usr/bin/python3.12 /usr/bin/python3
+    && ln -sf /usr/bin/python3.13 /usr/bin/python3
 
 # Copy app (with .venv) and uv from build stage
 COPY --from=build /app /app
 COPY --from=build /usr/local/bin/uv /usr/local/bin/uv
 
 # Expose CUDA/cuDNN libraries from pip packages so onnxruntime-gpu
-# can find libcublasLt.so.12 and libcudnn.so.9 at runtime
-ENV LD_LIBRARY_PATH="/app/.venv/lib/python3.12/site-packages/nvidia/cudnn/lib:/app/.venv/lib/python3.12/site-packages/nvidia/cuda_runtime/lib:${LD_LIBRARY_PATH}"
+# can find libcublasLt.so.12 and libcudnn.so.9 at runtime (amd64 only)
+ENV LD_LIBRARY_PATH="/app/.venv/lib/python3.13/site-packages/nvidia/cudnn/lib:/app/.venv/lib/python3.13/site-packages/nvidia/cuda_runtime/lib:${LD_LIBRARY_PATH}"
 
 RUN groupadd -g 568 apps && useradd -u 568 -g apps -m -s /bin/bash appuser \
     && mkdir -p /models/.insightface /models/huggingface \

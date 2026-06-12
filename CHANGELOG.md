@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.4] - 2026-06-12
+
+### Changed
+
+- **Python 3.13 across all platforms**: bumped from 3.12 to 3.13. amd64 installs Python 3.13 from the deadsnakes PPA on the Ubuntu 22.04 CUDA base; arm64 uses the Python 3.13 package available natively in Ubuntu 26.04. All confirmed dependencies (`insightface 1.0.1`, `onnxruntime-gpu 1.26.0`, `torch 2.12.0+cu126`) have Python 3.13 wheels.
+- **arm64 base: Ubuntu 26.04**: Python 3.12 was removed from Ubuntu 26.04's default repos; upgrading the base pulls Python 3.13 without a PPA.
+- **`requires-python = ">=3.13"`** and `target-version = "py313"` updated in `pyproject.toml`.
+- **CI updated to Python 3.13**: `test.yml` and `update-lockfile.yml` now install Python 3.13.
+- **`uv.lock` regenerated** for Python 3.13.5.
+
 ## [0.2.3] - 2026-06-12
 
 ### Fixed
