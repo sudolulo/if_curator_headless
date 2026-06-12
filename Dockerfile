@@ -1,20 +1,25 @@
-# ── Platform-conditional base ─────────────────────────────────────────────
-#   amd64:  NVIDIA CUDA 13.3 (GPU acceleration when available, CPU fallback)
-#   arm64:  Ubuntu 24.04 (CPU-only; no CUDA on ARM)
+# ── Base images ───────────────────────────────────────────────────────────────
+#   amd64 + gpu:  NVIDIA CUDA 13.3 + cuDNN (GPU acceleration when available)
+#   amd64 + cpu:  Ubuntu 22.04 (CPU-only, ~2 GB smaller image)
+#   arm64:        Ubuntu 24.04 (CPU-only; no CUDA wheels on ARM)
 
-FROM --platform=$BUILDPLATFORM nvidia/cuda:13.3.0-cudnn-runtime-ubuntu22.04 AS base-amd64
-FROM ubuntu:24.04 AS base-arm64
+ARG VARIANT=gpu
 
-# ── Build stage ───────────────────────────────────────────────────────────
+FROM --platform=$BUILDPLATFORM nvidia/cuda:13.3.0-cudnn-runtime-ubuntu22.04 AS base-amd64-gpu
+FROM ubuntu:22.04 AS base-amd64-cpu
+FROM ubuntu:24.04 AS base-arm64-gpu
+FROM ubuntu:24.04 AS base-arm64-cpu
+
+# ── Build stage ───────────────────────────────────────────────────────────────
 ARG TARGETARCH
 
-FROM base-${TARGETARCH} AS build
+FROM base-${TARGETARCH}-${VARIANT} AS build
 
+ARG VARIANT=gpu
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Both bases (Ubuntu 22.04 CUDA / Ubuntu 24.04) need Python 3.13 from the
-# deadsnakes PPA. GNUPGHOME is isolated to a tmpdir so gpg never tries to
-# contact an agent socket, which fails silently under QEMU.
+# Both Ubuntu 22.04 and 24.04 get Python 3.13 from the deadsnakes PPA.
+# GNUPGHOME is isolated so gpg never contacts an agent socket under QEMU.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates curl gnupg software-properties-common \
     && GNUPGHOME=$(mktemp -d) add-apt-repository ppa:deadsnakes/ppa -y \
@@ -30,20 +35,26 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
 
 WORKDIR /app
 
-COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev \
+# For cpu variant, swap in the CPU-only pyproject and lockfile before syncing.
+COPY pyproject.toml uv.lock pyproject-cpu.toml uv-cpu.lock ./
+RUN if [ "$VARIANT" = "cpu" ]; then \
+        cp pyproject-cpu.toml pyproject.toml && \
+        cp uv-cpu.lock uv.lock; \
+    fi && \
+    uv sync --frozen --no-dev \
     && uv cache clean
 
 COPY winnow/ winnow/
 COPY entrypoint.sh scheduler.py ./
 RUN chmod +x /app/entrypoint.sh
 
-# ── Runtime stage ─────────────────────────────────────────────────────────
+# ── Runtime stage ─────────────────────────────────────────────────────────────
 #   Starts fresh from the base image — excludes build tools (g++,
 #   python3.13-dev, gnupg, software-properties-common) not needed at runtime.
 
-FROM base-${TARGETARCH} AS runtime
+FROM base-${TARGETARCH}-${VARIANT} AS runtime
 
+ARG VARIANT=gpu
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -61,8 +72,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=build /app /app
 COPY --from=build /usr/local/bin/uv /usr/local/bin/uv
 
-# Expose CUDA/cuDNN libraries from pip packages so onnxruntime-gpu
-# can find libcublasLt.so.12 and libcudnn.so.9 at runtime (amd64 only)
+# Expose CUDA/cuDNN libraries from pip packages so onnxruntime-gpu can find
+# libcublasLt.so.12 and libcudnn.so.9 at runtime (amd64-gpu only).
+# On cpu builds these paths don't exist; non-existent entries are ignored.
 ENV LD_LIBRARY_PATH="/app/.venv/lib/python3.13/site-packages/nvidia/cudnn/lib:/app/.venv/lib/python3.13/site-packages/nvidia/cuda_runtime/lib:${LD_LIBRARY_PATH}"
 
 RUN groupadd -g 568 apps && useradd -u 568 -g apps -m -s /bin/bash appuser \

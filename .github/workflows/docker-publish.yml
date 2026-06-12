@@ -126,3 +126,58 @@ jobs:
       - name: Inspect image
         run: |
           docker buildx imagetools inspect ${{ steps.tags.outputs.tags }}
+
+  build-cpu:
+    name: Build CPU-only (amd64)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          echo "Disk space freed."
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Determine CPU image tag
+        id: cpu-tag
+        run: |
+          if [ "${{ github.ref_name }}" = "dev" ]; then
+            echo "tag=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-cpu" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cpu" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and push CPU image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          build-args: VARIANT=cpu
+          cache-from: type=gha,scope=linux/amd64-cpu
+          cache-to: type=gha,mode=max,scope=linux/amd64-cpu
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          push: true
+          tags: ${{ steps.cpu-tag.outputs.tag }}
+
+      - name: Inspect CPU image
+        run: |
+          docker buildx imagetools inspect ${{ steps.cpu-tag.outputs.tag }}

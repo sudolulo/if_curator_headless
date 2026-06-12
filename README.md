@@ -111,12 +111,19 @@ If the embedding model is unavailable, the tool falls back to **time spread**: e
 
 ## Running in Docker
 
+### Image Tags
+
+| Tag | Arch | GPU | Notes |
+| :-- | :-- | :-- | :-- |
+| `:latest` | amd64 + arm64 | CUDA 13.3 (amd64) | Requires NVIDIA Container Toolkit on amd64 |
+| `:cpu` | amd64 | None | ~2 GB smaller; use if you have no NVIDIA GPU |
+
 ### Quick Start
 
 ```yaml
 services:
   winnow:
-    image: ghcr.io/sudolulo/winnow:latest
+    image: ghcr.io/sudolulo/winnow:latest   # or :cpu for CPU-only amd64
     environment:
       - IMMICH_URL=http://192.168.1.10:2283
       - API_KEY=your-immich-api-key
@@ -135,6 +142,8 @@ services:
               count: all
               capabilities: [gpu]
 ```
+
+> **CPU users (`:cpu` tag):** remove the `deploy.resources` block — no NVIDIA runtime needed.
 
 See [compose.yml](compose.yml) for the full annotated example.
 
