@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.10] - 2026-06-12
+
+### Added
+
+- **`VERBOSE` env var**: set `VERBOSE=true` to enable DEBUG-level console output. The log file always captures DEBUG; this flag controls what appears on the terminal. Useful when diagnosing issues without a full shell into the container.
+- **`:cpu` Docker image tag**: a separate CPU-only image (`ghcr.io/sudolulo/winnow:cpu`) is now built and pushed alongside `:latest`. Uses `onnxruntime` instead of `onnxruntime-gpu`; ~2 GB smaller. Suitable for systems without an NVIDIA GPU.
+- **Empty `CRON_SCHEDULE` keeps container alive**: setting `CRON_SCHEDULE=` (empty string) starts the container without running immediately and without exiting — useful for `docker exec` ad-hoc runs on a long-lived container. Previously, an empty value was treated the same as unset (run once, then exit).
+
+### Changed
+
+- **TTY auto-detection replaces `AUTO_MODE`**: winnow now detects whether a TTY is attached (`sys.stdin.isatty()`) and switches between interactive and auto mode automatically. `AUTO_MODE=true` becomes an explicit override for forcing auto mode in a terminal session. No config change needed for normal Docker deployments.
+- **Logging levels audited**: internal algorithmic detail (clustering steps, asset fetch progress, per-page pagination) demoted from INFO to DEBUG. INFO now reflects meaningful pipeline milestones only (model ready, selection complete, quality filtered). Reduces noise in production logs without losing information.
+- **Model load logging improved**: SigLIP and InsightFace loading now reports cache hit/miss, download size estimate, device used, and load time.
+
+### Fixed
+
+- **GPU OOM crash loop (production)**: `CUDAExecutionProvider` was silently absent even with a GPU attached, causing InsightFace to run on CPU and exhaust RAM processing large person libraries. Root cause: CUDA/cuDNN libraries in nvidia pip packages were invisible to onnxruntime. Fixed by running `ldconfig` over all `nvidia-*/lib/` directories in the venv at image build time.
+- **ldconfig path now Python-version-agnostic**: the `find` command used to register nvidia pip libraries hardcoded `python3.13`; replaced with `python3.*` glob so the path survives a Python upgrade without silently producing an empty ldconfig config.
+- **`PYTHONPATH=/app` added to Dockerfile**: the entry point script sets `sys.path[0]` to the script directory, not `/app`. Since `uv sync` runs before `COPY winnow/`, the wheel has only dist-info in site-packages. `PYTHONPATH=/app` makes the `winnow` package importable without reverting to `python -m`.
+- **CPU fallback retrying broken GPU provider**: InsightFace CPU fallback omitted `providers=["CPUExecutionProvider"]`, causing onnxruntime to retry `CUDAExecutionProvider` on every inference call. Now explicitly sets the CPU provider and suppresses C-extension noise via fd-level redirect.
+- **`_suppress_output` stderr loss on fd exhaustion**: if the first `os.dup2` in the finally block raised `OSError`, the second call was skipped, permanently redirecting stderr to `/dev/null` for the process lifetime. Wrapped in nested `try/finally` so both restores are always attempted.
+- **Frigate `/api/faces` response parsing**: the response is `{person_name: [files], "train": [...]}` — `"train"` is a flat pending list, not a person. Previous code called `.items()` on the `"train"` value (a list), crashing with `AttributeError`. Now skips the `"train"` key explicitly.
+- **Immich 401 detection**: a stale or invalid API key now logs a clear error message (`Immich API key is invalid or expired (401 Unauthorized)`) instead of raising an unhandled exception.
+- **Falsy-zero detection confidence**: `face.get("score") or face.get("confidence")` treated a valid `score=0.0` as falsy, falling through to the `confidence` field (often `None`). Replaced with an explicit `None` check. Affected both quality filtering and hard-example weighting in diversity selection.
+- **Face crop using wrong person's image dimensions**: in multi-person assets, `_crop_face_from_thumbnail`'s scale-factor loop matched the first person with any face regardless of `person_id`, producing incorrectly scaled bounding box coordinates for the target person. Loop now applies the same `person_id` filter as `_get_face_bbox`.
+- **Adaptive stopping bypassed for partially-trained people**: in auto mode with `already_uploaded > 0`, `limit` was converted from `"auto"` to an integer, disabling the FPS adaptive threshold and early-stop check. Now keeps `limit="auto"` through selection and trims the result to the remaining capacity afterward.
+- **Embedding cache key mismatch**: HuggingFace cache path check hardcoded the model slug string; replaced with a derivation from `model_name` using `"models--" + model_name.replace("/", "--")` so the check stays correct if the model name changes.
+- **Scheduler: sleep until next run**: the loop slept a fixed 60 seconds regardless of schedule interval, causing runs to fire up to 59 seconds late and waking the process unnecessarily on long schedules (e.g. weekly). Now sleeps exactly until `next_run`.
+- **Scheduler swallowing `SystemExit`**: `except BaseException` in the run wrapper was replaced with `except Exception` (with `KeyboardInterrupt` re-raised above), so `sys.exit()` calls propagate correctly.
+- **Log handler leak**: `setup_logging` now closes and removes existing handlers before adding new ones, preventing file handle accumulation across repeated calls.
+- **`RETRY_REJECTED` silently applied in interactive mode**: the env var was applied unconditionally even in interactive sessions. Now used only as the default for the interactive prompt so users can override it per-run.
+- **`compose.yml` comment inverted**: a comment stated `-it` forces non-interactive mode; corrected to reflect that `-it` allocates a TTY (interactive mode).
+
+### Security
+
+- API key is no longer stored in any config file. All authentication uses environment variables or `.env` only.
+
 ## [0.2.9] - 2026-06-12
 
 ### Fixed
