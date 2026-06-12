@@ -236,3 +236,4 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+compose.override.yml

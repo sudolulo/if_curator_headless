@@ -1,8 +1,0 @@
-services:
-  winnow:
-    build: .
-    network_mode: host
-    volumes:
-      - /code/winnow/models:/models
-      - /code/winnow/embeddings:/app/.if_cache
-      - /code/winnow/output:/app/frigate_train
