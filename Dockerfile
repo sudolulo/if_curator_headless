@@ -1,9 +1,9 @@
 # ── Platform-conditional base ─────────────────────────────────────────────
 #   amd64:  NVIDIA CUDA 12.6 (GPU acceleration when available, CPU fallback)
-#   arm64:  Ubuntu 24.04 (CPU-only; Python 3.12 native — no PPA needed)
+#   arm64:  Ubuntu 26.04 (CPU-only; Python 3.12 native — no PPA needed)
 
 FROM --platform=$BUILDPLATFORM nvidia/cuda:12.9.2-cudnn-runtime-ubuntu22.04 AS base-amd64
-FROM --platform=$BUILDPLATFORM ubuntu:24.04 AS base-arm64
+FROM --platform=$BUILDPLATFORM ubuntu:26.04 AS base-arm64
 
 # ── Build stage ───────────────────────────────────────────────────────────
 ARG TARGETARCH
