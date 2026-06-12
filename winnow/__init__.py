@@ -5,4 +5,9 @@ Immich library for Frigate's Face Recognition (ArcFace) and Object/State
 Classification models.
 """
 
-__version__ = "0.1.0"
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    __version__ = version("winnow")
+except PackageNotFoundError:
+    __version__ = "unknown"

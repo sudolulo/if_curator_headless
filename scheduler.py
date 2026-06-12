@@ -11,6 +11,10 @@ except ImportError:
     print("croniter not installed. Run: uv add croniter")
     sys.exit(1)
 
+# Imported at module level so models loaded during the first run stay
+# resident in memory across all subsequent scheduled runs.
+from winnow.cli import main
+
 SCHEDULE = os.environ["CRON_SCHEDULE"]
 MODELS_DIR = os.environ.get("HF_HOME", "/models/huggingface")
 INSIGHTFACE_BASE = os.environ.get("INSIGHTFACE_HOME", "/models")
@@ -21,17 +25,11 @@ logger = logging.getLogger(__name__)
 def check_models() -> None:
     buffalo = Path(INSIGHTFACE_BASE) / ".insightface" / "models" / "buffalo_l"
     hf_hub = Path(MODELS_DIR) / "hub"
-    buffalo_ok = buffalo.exists()
-    hf_ok = hf_hub.exists() and any(hf_hub.iterdir())
-    if not buffalo_ok:
+    if not buffalo.exists():
         print("  InsightFace Buffalo_L not found — will download on first run", flush=True)
-    if not hf_ok:
+    if not (hf_hub.exists() and any(hf_hub.iterdir())):
         print("  HuggingFace models not found — will download on first run", flush=True)
 
-
-# Import once — models loaded during the first run stay resident in memory
-# for all subsequent scheduled runs, avoiding repeated multi-GB load times.
-from winnow.cli import main  # noqa: E402
 
 NOW = time.time()
 cron = croniter(SCHEDULE, NOW)
