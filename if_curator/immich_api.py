@@ -37,7 +37,7 @@ def get_people() -> list[dict]:
         )
         resp.raise_for_status()
         return resp.json().get("people", [])
-    except requests.RequestException as e:
+    except (requests.RequestException, ValueError) as e:
         logger.error(f"Failed to fetch people: {e}")
         return []
 
@@ -78,7 +78,7 @@ def fetch_all_assets(person: dict) -> list[dict]:
             if len(page_assets) < page_size:
                 break
 
-        except requests.RequestException as e:
+        except (requests.RequestException, ValueError) as e:
             logger.error(f"Exception fetching assets for {name}: {e}")
             break
 

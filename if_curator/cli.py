@@ -12,7 +12,7 @@ from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn
 from rich.prompt import Confirm, IntPrompt, Prompt
 from rich.table import Table
 
-from .config import Config, ConfigManager
+from .config import Config, ConfigManager, get_headers
 from .diversity import select_diverse_assets
 from .embeddings import is_embedding_available, load_embedding_model
 from .image_processing import process_face_mode, process_full_mode, process_object_mode
@@ -541,7 +541,7 @@ def execute_jobs(jobs: list[dict]) -> None:
                     else:
                         resp = requests.get(
                             f"{Config.IMMICH_URL}/api/assets/{asset['id']}/thumbnail?size=preview&format=JPEG",
-                            headers={"x-api-key": Config.API_KEY, "Accept": "application/json"},
+                            headers=get_headers(),
                             timeout=30,
                         )
                         img = Image.open(BytesIO(resp.content)) if resp.ok else None
