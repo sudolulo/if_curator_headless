@@ -1,9 +1,9 @@
 # ── Platform-conditional base ─────────────────────────────────────────────
 #   amd64:  NVIDIA CUDA 12.6 (GPU acceleration when available, CPU fallback)
-#   arm64:  Plain Ubuntu (CPU-only, no CUDA on ARM)
+#   arm64:  Ubuntu 24.04 (CPU-only; Python 3.12 native — no PPA needed)
 
 FROM --platform=$BUILDPLATFORM nvidia/cuda:12.9.2-cudnn-runtime-ubuntu22.04 AS base-amd64
-FROM --platform=$BUILDPLATFORM ubuntu:22.04 AS base-arm64
+FROM --platform=$BUILDPLATFORM ubuntu:24.04 AS base-arm64
 
 # ── Build stage ───────────────────────────────────────────────────────────
 ARG TARGETARCH
@@ -12,13 +12,17 @@ FROM base-${TARGETARCH} AS build
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# amd64 (Ubuntu 22.04 CUDA base): Python 3.12 via deadsnakes PPA
+# arm64 (Ubuntu 24.04): Python 3.12 is native — skip PPA entirely
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
-    gnupg \
-    software-properties-common \
-    && add-apt-repository ppa:deadsnakes/ppa -y \
-    && apt-get update && apt-get install -y --no-install-recommends \
+    && if [ "$TARGETARCH" = "amd64" ]; then \
+        apt-get install -y --no-install-recommends gnupg software-properties-common \
+        && add-apt-repository ppa:deadsnakes/ppa -y \
+        && apt-get update; \
+    fi \
+    && apt-get install -y --no-install-recommends \
     python3.12 python3.12-venv python3.12-dev \
     libgl1 libglib2.0-0 libxext6 g++ \
     && rm -rf /var/lib/apt/lists/* \
@@ -47,10 +51,13 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
-    software-properties-common \
     tini \
-    && add-apt-repository ppa:deadsnakes/ppa -y \
-    && apt-get update && apt-get install -y --no-install-recommends \
+    && if [ "$TARGETARCH" = "amd64" ]; then \
+        apt-get install -y --no-install-recommends gnupg software-properties-common \
+        && add-apt-repository ppa:deadsnakes/ppa -y \
+        && apt-get update; \
+    fi \
+    && apt-get install -y --no-install-recommends \
     python3.12 python3.12-venv \
     libgl1 libglib2.0-0 libxext6 \
     && rm -rf /var/lib/apt/lists/* \
