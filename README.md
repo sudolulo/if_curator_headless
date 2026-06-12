@@ -128,7 +128,6 @@ services:
       - IMMICH_URL=http://192.168.1.10:2283
       - API_KEY=your-immich-api-key
       - FRIGATE_URL=http://192.168.1.10:5000
-      - AUTO_MODE=true
       - CRON_SCHEDULE=0 3 * * 0   # Every Sunday at 3 AM
     volumes:
       - /path/to/models:/models
@@ -161,7 +160,7 @@ The first run after a fresh install downloads the embedding models (~1-2 GB). Su
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
-| `AUTO_MODE` | `false` | Run without interactive prompts — required for Docker/cron use |
+| `AUTO_MODE` | *(auto)* | Force non-interactive mode even in a terminal; auto-detected otherwise (no TTY = auto) |
 | `TRAINING_MODE` | `face` | `face` — upload crops to Frigate API; `object` — save crops to disk |
 | `STRATEGY` | `auto` | `auto` (adaptive), `standard` (30 images), `broad` (100 images) |
 | `LIMIT` | *(unset)* | Exact image count — overrides `STRATEGY` |

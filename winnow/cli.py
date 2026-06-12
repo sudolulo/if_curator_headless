@@ -64,21 +64,18 @@ def main() -> None:
             rprint("[bold red]Could not fetch people from Immich. Check URL/Key.[/bold red]")
             return
 
-        # Check for non-interactive mode; also force auto when stdin has no TTY
-        # (e.g. Docker without -it) to avoid an EOFError crash
-        auto_mode = os.environ.get("AUTO_MODE", "false").lower() == "true" or not sys.stdin.isatty()
+        # Auto mode when no TTY (Docker, cron, pipes) — the primary use case.
+        # A TTY means local interactive use; AUTO_MODE=true overrides that for scripting.
+        auto_mode = not sys.stdin.isatty() or os.environ.get("AUTO_MODE", "").lower() in ("true", "1", "yes")
         dry_run = os.environ.get("DRY_RUN", "false").lower() in ("true", "1", "yes")
 
         if dry_run:
             rprint("[bold yellow]DRY RUN — no images will be downloaded or uploaded[/bold yellow]")
 
         if auto_mode:
-            if not sys.stdin.isatty() and os.environ.get("AUTO_MODE", "false").lower() != "true":
-                rprint("[dim]No TTY detected — running in auto mode. Set AUTO_MODE=true to suppress this.[/dim]")
-            else:
-                rprint("[bold cyan]Running in AUTO mode (non-interactive)[/bold cyan]")
             jobs = auto_configure(people)
         else:
+            rprint("[bold cyan]Interactive mode — set AUTO_MODE=true to skip prompts[/bold cyan]")
             jobs = interactive_configure(people)
 
         if jobs:

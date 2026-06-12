@@ -9,7 +9,9 @@ services:
       - FRIGATE_URL=${FRIGATE_URL}
 
       # ── Mode & Strategy ───────────────────────────────────────────────────
-      - AUTO_MODE=true
+      # Auto mode is active by default when no TTY is present (Docker/cron).
+      # Run with `docker run -it` or set AUTO_MODE=true to force non-interactive
+      # in a terminal.
       # TRAINING_MODE: face = upload to Frigate face recognition API
       #                object = save crops to output dir for manual Frigate placement
       - TRAINING_MODE=face
@@ -34,7 +36,7 @@ services:
       # - MAX_AUTO_IMAGES=80          # Hard cap on auto-diversity selection (default: 80)
 
       # ── Caching & Models ──────────────────────────────────────────────────
-      - FORCE_CPU=false
+      # - FORCE_CPU=true              # Disable GPU, fall back to CPU
       # - ENABLE_CACHE=false          # Disable embedding cache (default: true)
       - CACHE_DIR=/app/.if_cache
       - HF_HOME=/models/huggingface
@@ -55,8 +57,6 @@ services:
       - /path/to/winnow/models:/models
       - /path/to/winnow/cache:/app/.if_cache
       - /path/to/winnow/output:/app/frigate_train
-    stdin_open: true
-    tty: true
     restart: unless-stopped
     deploy:
       resources:
