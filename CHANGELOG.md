@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Container startup reinstalling packages**: `entrypoint.sh` used `uv run`, which performs a sync check on every startup and re-downloaded `ruff` and rebuilt the package each time. Replaced with direct `.venv/bin/python` calls to skip the sync entirely.
 - **InsightFace double `models/` path**: `INSIGHTFACE_HOME=/models` caused InsightFace to download Buffalo_L to `/models/models/buffalo_l` (InsightFace always appends `models/` to the root). Updated default in `compose.yml` and `.env.example` to `/models/.insightface`.
+- **Lint errors in CI**: unused imports in `tests/test_config.py` and `tests/test_upload_tracker.py`, unsorted imports in `scheduler.py` — all would have failed the ruff CI check.
 
 ## [0.2.0] - 2026-06-12
 
