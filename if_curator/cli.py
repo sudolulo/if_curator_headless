@@ -257,18 +257,9 @@ def upload_to_frigate(jobs: list[dict]) -> None:
     total_files = 0
     for job in jobs:
         name = job["person"]["name"]
-        person_dir = os.path.join(Config.OUTPUT_DIR, name)
-        if not os.path.isdir(person_dir):
-            continue
-        person_files = sorted(
-            f for f in os.listdir(person_dir)
-            if f.lower().endswith((".jpg", ".jpeg", ".png", ".webp"))
-        )
-        total_files += len(person_files)
-
-        # Recover asset IDs from the job's asset_map
         asset_map = job.get("asset_map", {})
         filename_to_asset_id[name] = asset_map
+        total_files += len(asset_map)
 
     if total_files == 0:
         rprint("  [yellow]No images found to upload.[/yellow]")
@@ -300,17 +291,12 @@ def upload_to_frigate(jobs: list[dict]) -> None:
                 progress.console.print(f"  [dim]⏭️  {name}: no output directory, skipping[/dim]")
                 continue
 
-            person_files = sorted(
-                f for f in os.listdir(person_dir)
-                if f.lower().endswith((".jpg", ".jpeg", ".png", ".webp"))
-            )
+            asset_map = filename_to_asset_id.get(name, {})
+            person_files = sorted(asset_map.keys())
 
             if not person_files:
                 progress.console.print(f"  [dim]⏭️  {name}: no images found[/dim]")
                 continue
-
-            # Get the asset map for this person
-            asset_map = filename_to_asset_id.get(name, {})
 
             progress.console.print(f"  📁 {name}: uploading {len(person_files)} image(s)...")
             person_uploaded = 0
