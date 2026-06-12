@@ -3,7 +3,7 @@
 #   arm64:  Plain Ubuntu (CPU-only, no CUDA on ARM)
 
 FROM --platform=$BUILDPLATFORM nvidia/cuda:12.9.2-cudnn-runtime-ubuntu22.04 AS base-amd64
-FROM --platform=$BUILDPLATFORM ubuntu:22.04 AS base-arm64
+FROM --platform=$BUILDPLATFORM ubuntu:26.04 AS base-arm64
 
 # ── Build stage ───────────────────────────────────────────────────────────
 ARG TARGETARCH
