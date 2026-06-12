@@ -1,9 +1,8 @@
-[![Publish Docker Image](https://github.com/sudolulo/winnow/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/sudolulo/winnow/actions/workflows/docker-publish.yml) [![Release](https://github.com/sudolulo/winnow/actions/workflows/release.yml/badge.svg)](https://github.com/sudolulo/winnow/actions/workflows/release.yml) [![Lint](https://github.com/sudolulo/winnow/actions/workflows/lint.yml/badge.svg)](https://github.com/sudolulo/winnow/actions/workflows/lint.yml) [![Test](https://github.com/sudolulo/winnow/actions/workflows/test.yml/badge.svg)](https://github.com/sudolulo/winnow/actions/workflows/test.yml)
-[![Immich](https://img.shields.io/badge/Immich-v1.106%2B-violet?style=for-the-badge)](https://immich.app) [![Frigate](https://img.shields.io/badge/Frigate-Ready-green?style=for-the-badge)](https://frigate.video)
-
-**Docs:** [Setup Guide](docs/setup.md) · [Troubleshooting](docs/troubleshooting.md) · [FAQ](docs/faq.md)
-
 # winnow
+
+[![Docker](https://github.com/sudolulo/winnow/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/sudolulo/winnow/actions/workflows/docker-publish.yml) [![Test](https://github.com/sudolulo/winnow/actions/workflows/test.yml/badge.svg)](https://github.com/sudolulo/winnow/actions/workflows/test.yml) [![Immich](https://img.shields.io/badge/Immich-v1.106%2B-blueviolet)](https://immich.app) [![Frigate](https://img.shields.io/badge/Frigate-Ready-brightgreen)](https://frigate.video)
+
+**Docs:** [Setup](https://github.com/sudolulo/winnow/wiki/Setup) · [Troubleshooting](https://github.com/sudolulo/winnow/wiki/Troubleshooting) · [FAQ](https://github.com/sudolulo/winnow/wiki/FAQ)
 
 `winnow` pulls photos of people and objects from your [Immich](https://immich.app) library, selects the most diverse and highest-quality subset using AI embeddings, and delivers them as training data for [Frigate](https://frigate.video)'s face recognition and object classification models.
 
