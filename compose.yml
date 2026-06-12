@@ -38,7 +38,7 @@ services:
       - ENABLE_CACHE=true
       - CACHE_DIR=/app/.if_cache
       - HF_HOME=/models/huggingface
-      - INSIGHTFACE_HOME=/models
+      - INSIGHTFACE_HOME=/models/.insightface
 
       # ── Tracker overrides (one-shot, remove after use) ────────────────────
       # - DRY_RUN=true                # Preview selection without downloading/uploading
