@@ -1,28 +1,29 @@
 # ── Platform-conditional base ─────────────────────────────────────────────
-#   amd64:  NVIDIA CUDA 12.6 (GPU acceleration when available, CPU fallback)
-#   arm64:  Ubuntu 26.04 (CPU-only; no CUDA on ARM)
+#   amd64:  NVIDIA CUDA 13.3 (GPU acceleration when available, CPU fallback)
+#   arm64:  Ubuntu 24.04 (CPU-only; no CUDA on ARM)
 
 FROM --platform=$BUILDPLATFORM nvidia/cuda:13.3.0-cudnn-runtime-ubuntu22.04 AS base-amd64
-FROM --platform=$BUILDPLATFORM ubuntu:26.04 AS base-arm64
+FROM --platform=$BUILDPLATFORM ubuntu:24.04 AS base-arm64
 
 # ── Build stage ───────────────────────────────────────────────────────────
 ARG TARGETARCH
 
 FROM base-${TARGETARCH} AS build
 
-ARG TARGETARCH
 ENV DEBIAN_FRONTEND=noninteractive
 
-# amd64 (Ubuntu 22.04 CUDA base): Python 3.13 via deadsnakes PPA
-# arm64 (Ubuntu 26.04): Python 3.13 available natively in repos
+# Both bases use Ubuntu 22.04 or 24.04 — neither has python3.13 natively.
+# Add the deadsnakes PPA using curl+gpg (no gpg-agent, safe under QEMU).
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
-    && if [ "$TARGETARCH" = "amd64" ]; then \
-        apt-get install -y --no-install-recommends gnupg software-properties-common \
-        && add-apt-repository ppa:deadsnakes/ppa -y \
-        && apt-get update; \
-    fi \
+    gnupg \
+    && curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xBA6932366A755776" \
+        | gpg --dearmor > /usr/share/keyrings/deadsnakes-archive-keyring.gpg \
+    && . /etc/os-release \
+    && echo "deb [signed-by=/usr/share/keyrings/deadsnakes-archive-keyring.gpg] https://ppa.launchpad.net/deadsnakes/ppa/ubuntu ${VERSION_CODENAME} main" \
+        > /etc/apt/sources.list.d/deadsnakes.list \
+    && apt-get update \
     && apt-get install -y --no-install-recommends \
     python3.13 python3.13-venv python3.13-dev \
     libgl1 libglib2.0-0 libxext6 g++ \
@@ -48,20 +49,23 @@ RUN chmod +x /app/entrypoint.sh
 
 FROM base-${TARGETARCH} AS runtime
 
-ARG TARGETARCH
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
+    curl \
+    gnupg \
     tini \
-    && if [ "$TARGETARCH" = "amd64" ]; then \
-        apt-get install -y --no-install-recommends gnupg software-properties-common \
-        && add-apt-repository ppa:deadsnakes/ppa -y \
-        && apt-get update; \
-    fi \
+    && curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xBA6932366A755776" \
+        | gpg --dearmor > /usr/share/keyrings/deadsnakes-archive-keyring.gpg \
+    && . /etc/os-release \
+    && echo "deb [signed-by=/usr/share/keyrings/deadsnakes-archive-keyring.gpg] https://ppa.launchpad.net/deadsnakes/ppa/ubuntu ${VERSION_CODENAME} main" \
+        > /etc/apt/sources.list.d/deadsnakes.list \
+    && apt-get update \
     && apt-get install -y --no-install-recommends \
     python3.13 python3.13-venv \
     libgl1 libglib2.0-0 libxext6 \
+    && apt-get purge -y --auto-remove curl gnupg \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf /usr/bin/python3.13 /usr/bin/python3
 

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.7] - 2026-06-12
+
+### Fixed
+
+- **arm64 base reverted to Ubuntu 24.04**: Ubuntu 26.04 ships Python 3.14, not 3.13 — `python3.13` was not locatable in its repos. Reverted arm64 base to `ubuntu:24.04`.
+- **Deadsnakes PPA now uses curl+gpg instead of `add-apt-repository`**: `add-apt-repository` spawns a gpg-agent which crashes under QEMU (arm64 CI). The PPA is now added by fetching the key via `curl` and piping through `gpg --dearmor` — no agent, works on both architectures.
+- **PPA conditional removed**: both amd64 (Ubuntu 22.04 CUDA) and arm64 (Ubuntu 24.04) now go through the same deadsnakes install path, eliminating the per-arch branching and the `ARG TARGETARCH` dependency in RUN commands.
+
 ## [0.2.6] - 2026-06-12
 
 ### Fixed
