@@ -105,7 +105,9 @@ def _get_face_confidence(asset: dict, person_id: str | None = None) -> float | N
             continue
         faces = person.get("faces", [])
         if faces:
-            return faces[0].get("score") or faces[0].get("confidence")
+            f = faces[0]
+            score = f.get("score")
+            return score if score is not None else f.get("confidence")
     return None
 
 
@@ -136,8 +138,10 @@ def _crop_face_from_thumbnail(
     x1, y1, x2, y2 = bbox
     img_w, img_h = img.size
 
-    # Get metadata dimensions to scale bbox
+    # Get metadata dimensions to scale bbox — must match the same person as _get_face_bbox
     for person in asset.get("people", []):
+        if person_id and person.get("id") != person_id:
+            continue
         faces = person.get("faces", [])
         if faces:
             meta_w = faces[0].get("imageWidth") or img_w

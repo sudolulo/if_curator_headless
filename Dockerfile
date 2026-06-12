@@ -75,7 +75,7 @@ COPY --from=build /usr/local/bin/uv /usr/local/bin/uv
 # Register every nvidia pip-package lib/ directory with ldconfig so that
 # onnxruntime-gpu and torch can find libcudnn, libcublas, libcufft, etc.
 # without a hand-maintained LD_LIBRARY_PATH. Skipped silently on cpu builds.
-RUN find /app/.venv/lib/python3.13/site-packages/nvidia -type d -name "lib" \
+RUN find /app/.venv/lib/python3.*/site-packages/nvidia -type d -name "lib" \
         2>/dev/null > /etc/ld.so.conf.d/nvidia-pip.conf && ldconfig || true
 
 RUN groupadd -g 568 apps && useradd -u 568 -g apps -m -s /bin/bash appuser \

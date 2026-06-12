@@ -49,4 +49,4 @@ while True:
             logger.error(f"winnow run failed: {e}", exc_info=True)
             print(f"winnow run failed: {e}", flush=True)
         next_run = cron.get_next(float)
-    time.sleep(60)
+    time.sleep(max(1, next_run - time.time()))

@@ -140,10 +140,11 @@ def fetch_face_data(asset_id: str, person_id: str | None = None) -> FaceData | N
             face.get("boundingBoxY2", 0),
         )
 
+        score = face.get("score")
         return FaceData(
             embedding=embedding,
             bbox=bbox,
-            confidence=face.get("score") or face.get("confidence"),
+            confidence=score if score is not None else face.get("confidence"),
             image_width=face.get("imageWidth", 0),
             image_height=face.get("imageHeight", 0),
         )

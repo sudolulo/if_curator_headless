@@ -299,10 +299,13 @@ def auto_configure(people: list[dict]) -> list[dict]:
         has_embedding = is_embedding_available(entity_type)
         limit, selection_mode = _resolve_strategy(strategy, has_embedding)
 
-        # Cap selection to remaining capacity
+        # Cap selection to remaining capacity.
+        # For auto mode with partial training, keep "auto" so adaptive stopping
+        # still runs — just trim the result to the remaining capacity afterward.
+        auto_cap = None
         if limit == "auto":
             if already_uploaded > 0:
-                limit = capacity  # partially filled — select exactly what remains
+                auto_cap = capacity
         else:
             limit = min(limit, capacity)
 
@@ -312,6 +315,8 @@ def auto_configure(people: list[dict]) -> list[dict]:
         selected_assets = _perform_selection(
             recent_assets, limit, name, selection_mode, entity_type, person_id=person["id"]
         )
+        if auto_cap is not None:
+            selected_assets = selected_assets[:auto_cap]
 
         if selected_assets:
             rprint(f"  [green]Queued {len(selected_assets)} images for {name}.[/green]")
