@@ -6,6 +6,10 @@ on:
     paths-ignore:
       - "**.md"
       - "docs/**"
+      - "CONTRIBUTING.md"
+      - "SECURITY.md"
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".github/PULL_REQUEST_TEMPLATE.md"
       - ".github/workflows/release.yml"
       - ".github/workflows/lint.yml"
       - ".github/dependabot.yml"
