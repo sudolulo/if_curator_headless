@@ -229,6 +229,14 @@ Requires Python 3.13+ and [uv](https://astral.sh/uv). An NVIDIA, AMD, or Intel G
 
 ---
 
+## Getting Help
+
+- **[GitHub Discussions](https://github.com/sudolulo/winnow/discussions)** — questions, setup help, and general discussion
+- **[Wiki](https://github.com/sudolulo/winnow/wiki)** — setup guide, troubleshooting, and FAQ
+- **[Issues](https://github.com/sudolulo/winnow/issues)** — bugs and feature requests only
+
+---
+
 ## Attribution
 
 Based on [if_curator](https://github.com/ds-sebastian/if_curator) by Sebastian, licensed MIT.

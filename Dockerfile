@@ -65,6 +65,12 @@ RUN chmod +x /app/entrypoint.sh
 FROM base-${TARGETARCH}-${VARIANT} AS runtime
 
 ARG VARIANT=gpu
+ARG VERSION=dev
+LABEL org.opencontainers.image.title="winnow" \
+      org.opencontainers.image.description="Selects diverse, high-quality photos from Immich as training data for Frigate face recognition and object classification." \
+      org.opencontainers.image.source="https://github.com/sudolulo/winnow" \
+      org.opencontainers.image.licenses="AGPL-3.0-or-later" \
+      org.opencontainers.image.version="${VERSION}"
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \

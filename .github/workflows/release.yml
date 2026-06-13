@@ -125,6 +125,7 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
+          build-args: VERSION=${{ steps.tag.outputs.VERSION }}
           cache-from: type=gha,scope=release-gpu
           cache-to: type=gha,mode=max,scope=release-gpu
           tags: |
@@ -137,8 +138,10 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
-          build-args: VARIANT=cpu
           push: true
+          build-args: |
+            VARIANT=cpu
+            VERSION=${{ steps.tag.outputs.VERSION }}
           cache-from: type=gha,scope=release-cpu
           cache-to: type=gha,mode=max,scope=release-cpu
           tags: |
@@ -151,8 +154,10 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64
-          build-args: VARIANT=rocm
           push: true
+          build-args: |
+            VARIANT=rocm
+            VERSION=${{ steps.tag.outputs.VERSION }}
           cache-from: type=gha,scope=release-rocm
           cache-to: type=gha,mode=max,scope=release-rocm
           tags: |
@@ -165,8 +170,10 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64
-          build-args: VARIANT=intel
           push: true
+          build-args: |
+            VARIANT=intel
+            VERSION=${{ steps.tag.outputs.VERSION }}
           cache-from: type=gha,scope=release-intel
           cache-to: type=gha,mode=max,scope=release-intel
           tags: |
