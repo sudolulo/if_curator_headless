@@ -3,6 +3,7 @@
 import logging
 import os
 import shutil
+import time
 from io import BytesIO
 from urllib.parse import quote
 
@@ -25,6 +26,68 @@ from .upload_tracker import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _reconcile_frigate_mappings(
+    person_name: str,
+    known_files_before: set[str],
+    uploaded: list[tuple[str, str | None]],
+) -> None:
+    """Map Frigate filenames to asset IDs after a batch of uploads.
+
+    Polls until all expected new files appear in the Frigate API, then maps
+    them to asset IDs by filename timestamp order (Frigate processes the
+    upload queue in FIFO order, so earlier uploads get earlier timestamps).
+
+    KNOWN LIMITATION — race condition with external uploads:
+    If another client uploads a face file for this person concurrently, the
+    count of new files will exceed `len(uploaded)` and we bail out entirely
+    (the "> target" branch). That's safe — we never record a wrong mapping —
+    but those uploads become permanently unmapped (they won't be eligible for
+    quality replacement). The right fix is a Frigate API that returns the
+    filename in the upload response, removing the need for any post-upload
+    diffing. Until then, the external-upload guard keeps mappings correct at
+    the cost of occasionally missing them when another client is active.
+    """
+    target = len(uploaded)
+    current_files: set[str] = set()
+
+    for delay in (1, 2, 4, 8):
+        time.sleep(delay)
+        fresh = get_frigate_person_files(person_name)
+        if fresh is None:
+            logger.warning(
+                f"{person_name}: Frigate API unreachable during mapping reconciliation"
+                " — quality replacement won't target these files"
+            )
+            return
+        current_files = set(fresh)
+        if len(current_files - known_files_before) >= target:
+            break
+
+    new_files = current_files - known_files_before
+
+    if len(new_files) == target:
+        def _ts(fname: str) -> float:
+            try:
+                return float(fname.rsplit("_", 1)[-1].replace(".webp", ""))
+            except (ValueError, IndexError):
+                return 0.0
+
+        for (fname, asset_id), frigate_file in zip(uploaded, sorted(new_files, key=_ts)):
+            if asset_id:
+                record_frigate_file(person_name, frigate_file, asset_id)
+        logger.debug(f"{person_name}: batch-mapped {target} Frigate file(s)")
+    elif len(new_files) > target:
+        logger.info(
+            f"{person_name}: {len(new_files)} new Frigate files for {target} uploads"
+            " (external upload detected) — skipping file mapping"
+        )
+    else:
+        logger.warning(
+            f"{person_name}: only {len(new_files)} of {target} expected Frigate files"
+            " appeared after reconciliation — mapping skipped"
+        )
 
 
 def _enrich_asset_with_face_data(asset: dict, person: dict) -> dict:
@@ -141,7 +204,7 @@ def execute_jobs(jobs: list[dict]) -> None:
                             # Record which asset produced which output file
                             filename = f"{count}.jpg"
                             asset_map[filename] = asset["id"]
-                            score_map[filename] = asset.get("face_confidence")
+                            score_map[filename] = asset.get("quality_score") or asset.get("face_confidence")
                             # Also record object-mode variant filenames
                             if mode == "object":
                                 for f in sorted(os.listdir(person_dir)):
@@ -253,17 +316,16 @@ def upload_to_frigate(jobs: list[dict]) -> None:
             person_uploaded = 0
             person_failed = 0
 
-            # Snapshot current Frigate filenames so we can identify which file
-            # each upload produces (Frigate assigns its own filename on ingest).
             known_frigate_files: set[str] = set(get_frigate_person_files(name) or [])
+            known_frigate_files_at_start = set(known_frigate_files)
+            effective_count = len(known_frigate_files)
             quality_replacement = job.get("config", {}).get("quality_replacement", False)
+            actually_uploaded: list[tuple[str, str | None]] = []
 
             for fname in person_files:
                 fpath = os.path.join(person_dir, fname)
 
-                # Quality replacement gate: when at cap, only upload if this image
-                # scores higher than the worst mapped file already in Frigate.
-                at_cap = len(known_frigate_files) >= Config.MAX_AUTO_IMAGES
+                at_cap = effective_count >= Config.MAX_AUTO_IMAGES
                 if at_cap:
                     if not quality_replacement:
                         progress.console.print(f"    [dim]⏭  {fname}: at cap, quality replacement disabled[/dim]")
@@ -291,6 +353,7 @@ def upload_to_frigate(jobs: list[dict]) -> None:
                     if delete_frigate_person_files(name, [worst_frigate_file]):
                         remove_frigate_file(name, worst_frigate_file)
                         known_frigate_files.discard(worst_frigate_file)
+                        effective_count -= 1
                     else:
                         logger.warning(f"Failed to delete {worst_frigate_file} for {name}, skipping replacement")
                         # Remove from tracker so the next candidate targets a different file.
@@ -310,31 +373,12 @@ def upload_to_frigate(jobs: list[dict]) -> None:
                         if resp.status_code == 200:
                             uploaded += 1
                             person_uploaded += 1
+                            effective_count += 1
 
-                            # Mark this asset as uploaded so it's skipped on future runs
                             asset_id = asset_map.get(fname)
                             if asset_id:
                                 mark_uploaded(asset_id, person_name=name, score=score_map.get(fname))
-
-                            # Identify the Frigate filename assigned to this upload
-                            # and record the mapping for future quality management.
-                            fresh = get_frigate_person_files(name)
-                            if fresh is None:
-                                logger.warning(
-                                    f"{name}: Frigate API unreachable after uploading {fname}"
-                                    f" — file mapping skipped, quality replacement won't target this file"
-                                )
-                            else:
-                                current_files = set(fresh)
-                                new_files = current_files - known_frigate_files
-                                if len(new_files) == 1 and asset_id:
-                                    record_frigate_file(name, next(iter(new_files)), asset_id)
-                                elif len(new_files) > 1:
-                                    logger.info(
-                                        f"{name}: {len(new_files)} new Frigate files after uploading {fname}"
-                                        f" (concurrent upload detected) — skipping file mapping"
-                                    )
-                                known_frigate_files = current_files
+                                actually_uploaded.append((fname, asset_id))
 
                             break
                         else:
@@ -390,6 +434,10 @@ def upload_to_frigate(jobs: list[dict]) -> None:
                         )
 
                 progress.advance(upload_task)
+
+            # Batch-map Frigate filenames to asset IDs now that all uploads are done
+            if actually_uploaded:
+                _reconcile_frigate_mappings(name, known_frigate_files_at_start, actually_uploaded)
 
             # Per-person summary
             if person_failed == 0:
